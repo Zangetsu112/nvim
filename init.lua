@@ -1,9 +1,6 @@
 vim.g.mapleader = " "
 vim.g.maplocalleader = " "
 
--- Set to true if you have a Nerd Font installed and selected in the terminal
-vim.g.have_nerd_font = false
-
 -- [[ Setting options ]]
 -- See `:help vim.opt`
 -- Make line numbers default
@@ -52,6 +49,14 @@ vim.opt.cursorline = true
 
 -- Minimal number of screen lines to keep above and below the cursor.
 vim.opt.scrolloff = 10
+
+-- Set the default border style for all floating windows to "rounded"
+vim.opt.winborder = "rounded"
+
+-- Conditional for Mac terminal specific settings
+local is_apple_terminal = function()
+	return vim.env.TERM_PROGRAM == "Apple_Terminal"
+end
 
 -- [[ Basic Keymaps ]]
 -- Clear highlights on search when pressing <Esc> in normal mode
@@ -551,6 +556,9 @@ require("lazy").setup({
 	{
 		"rebelot/kanagawa.nvim",
 		priority = 1000, -- Make sure to load this before all the other start plugins.
+		cond = function()
+			return not is_apple_terminal() -- Load Kanagawa ONLY IF NOT Apple Terminal
+		end,
 		init = function()
 			vim.cmd.colorscheme("kanagawa")
 
