@@ -8,18 +8,6 @@ return {
   },
   lazy = false,
   config = function()
-    -- Diagnostic Error Icons need to be defined (Neovim v10.0+)
-    vim.diagnostic.config {
-      signs = {
-        text = {
-          [vim.diagnostic.severity.ERROR] = 'E',
-          [vim.diagnostic.severity.WARN] = 'W',
-          [vim.diagnostic.severity.INFO] = 'I',
-          [vim.diagnostic.severity.HINT] = 'H',
-        },
-      },
-    }
-
     require('neo-tree').setup {
       close_if_last_window = true, -- Close Neo-tree if it is the last window left in the tab
       popup_border_style = 'rounded',
@@ -49,8 +37,8 @@ return {
         git_status = {
           symbols = {
             -- Change type
-            added = '', -- Redundant with git_status_colors
-            modified = '', -- Redundant with git_status_colors
+            added = '',      -- Redundant with git_status_colors
+            modified = '',   -- Redundant with git_status_colors
             deleted = '[D]', -- this can only be used in the git_status source
             renamed = '[R]', -- this can only be used in the git_status source
             -- Status type
@@ -70,11 +58,11 @@ return {
           hide_gitignored = true,
         },
         follow_current_file = {
-          enabled = false, -- This will find and focus the file in the active buffer every time
-          leave_dirs_open = false, -- `false` closes auto expanded dirs, such as with `:Neotree reveal`
+          enabled = false,                      -- This will find and focus the file in the active buffer every time
+          leave_dirs_open = false,              -- `false` closes auto expanded dirs, such as with `:Neotree reveal`
         },
         hijack_netrw_behavior = 'open_default', -- netrw disabled, opening a directory opens neo-tree
-        use_libuv_file_watcher = false, -- Will use OS level file watchers instead of relying on nvim autocmd events.
+        use_libuv_file_watcher = false,         -- Will use OS level file watchers instead of relying on nvim autocmd events.
       },
 
       git_status = {
