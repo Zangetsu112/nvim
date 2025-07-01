@@ -66,8 +66,7 @@ vim.keymap.set("n", "<Esc>", "<cmd>nohlsearch<CR>")
 -- Diagnostics settings
 -- Print style needs to be defined (Neovim v11.0+)
 vim.diagnostic.config({
-  virtual_lines = true,
-  virtual_text = false,
+  virtual_lines = false, -- Keep diagnostics virtual line off by default
 })
 -- List diagnostic messages in a quickfix
 vim.keymap.set("n", "<leader>q", vim.diagnostic.setloclist, { desc = "Open diagnostic [Q]uickfix list" })
@@ -117,20 +116,7 @@ vim.opt.rtp:prepend(lazypath)
 require("lazy").setup({
   { "tpope/vim-sleuth" }, -- Detect tabstop and shiftwidth automatically
 
-  {                       -- Adds git related signs to the gutter, as well as utilities for managing changes
-    "lewis6991/gitsigns.nvim",
-    opts = {
-      signs = {
-        add = { text = "+" },
-        change = { text = "~" },
-        delete = { text = "_" },
-        topdelete = { text = "‾" },
-        changedelete = { text = "~" },
-      },
-    },
-  },
-
-  { -- Fuzzy Finder (files, lsp, etc)
+  {                       -- Fuzzy Finder (files, lsp, etc)
     "nvim-telescope/telescope.nvim",
     event = "VimEnter",
     branch = "0.1.x",
@@ -194,7 +180,7 @@ require("lazy").setup({
       vim.keymap.set("n", "<leader>/", function()
         -- You can pass additional configuration to Telescope to change the theme, layout, etc.
         builtin.current_buffer_fuzzy_find(require("telescope.themes").get_dropdown({
-          winblend = 40,
+          winblend = 20,
           previewer = false,
         }))
       end, { desc = "[/] Fuzzily search in current buffer" })
@@ -238,7 +224,11 @@ require("lazy").setup({
       { "WhoIsSethDaniel/mason-tool-installer.nvim" },
       -- NOTE: `opts = {}` is the same as calling `require('module').setup({})`
       -- Useful LSP status messages (bottom right corner)
-      { "j-hui/fidget.nvim",                        opts = {} },
+      {
+        "j-hui/fidget.nvim",
+        opts = {}
+      },
+
       -- Adds completion capabilities to neovim-lsp
       { "saghen/blink.cmp" },
     },
@@ -286,13 +276,14 @@ require("lazy").setup({
           -- Fuzzy find all the symbols in your current document.
           --  Symbols are things like variables, functions, types, etc.
           map("<leader>ds", require("telescope.builtin").lsp_document_symbols, "[D]ocument [S]ymbols")
+          map("<leader>ws", require("telescope.builtin").lsp_workspace_symbols, "[W]orkspace [S]ymbols")
 
           -- Fuzzy find all the symbols in your current workspace.
           --  Similar to document symbols, except searches over your entire project.
           map(
-            "<leader>ws",
+            "<leader>p",
             require("telescope.builtin").lsp_dynamic_workspace_symbols,
-            "[W]orkspace [S]ymbols"
+            "[P]roject Dynamic Symbols"
           )
 
           -- Rename the variable under your cursor.
@@ -355,7 +346,8 @@ require("lazy").setup({
       --  By adding new plugins like blink, nvim-cmp and nvim-dap
       --  We create new capabilities, these capabilities need to be broadcasted to the LSP server.
       --  Blink provides methods to override the vim.lsp.protocol.make_client_capabilities()
-      local capabilities = require("blink.cmp").get_lsp_capabilities()
+      -- local capabilities = require("blink.cmp").get_lsp_capabilities()
+      -- Starting neovim v11, there is no need to share capabilities explicitly
 
       --  Additional override configurations for LSP. Available keys are:
       --  - cmd (table): Override the default command used to start the server
@@ -377,7 +369,12 @@ require("lazy").setup({
         },
       }
 
-      require("mason").setup()
+      require("mason").setup({
+        -- Remove this after winborder is fixed
+        ui = {
+          border = "rounded",
+        },
+      })
 
       -- Ensure the servers and tools above are installed
       local ensure_installed = vim.tbl_keys(servers or {})
@@ -397,40 +394,22 @@ require("lazy").setup({
       keymap = { preset = "enter" },
       -- (Default) Only show the documentation popup when manually triggered
       completion = { documentation = { auto_show = false } },
-
       appearance = {
         kind_icons = {
-          Text = "T",
-          Method = "M",
-          Function = "F",
-          Constructor = "C",
-
-          Field = "F",
-          Variable = "V",
-          Property = "P",
-
-          Class = "C",
-          Interface = "I",
-          Struct = "S",
-          Module = "M",
-
-          Unit = "U",
-          Value = "V",
-          Enum = "E",
-          EnumMember = "E",
-
-          Keyword = "K",
-          Constant = "C",
-
-          Snippet = "S",
-          Color = "O", -- For cOlor
-          File = "F",
-          Reference = "R",
-          Folder = "D", -- For Directory
-          Event = "E",
-          Operator = "O",
-          TypeParameter = "T",
-        }
+          Function = "[Function]",
+          Method = "[Method]",
+          Field = "[Field]",
+          Variable = "[Var]",
+          Property = "[Property]",
+          Keyword = "[Keyword]",
+          Struct = "[Struct]",
+          Enum = "[Enum]",
+          EnumMember = "[Enum]",
+          Snippet = "[Snippet]",
+          Text = "[Text]",
+          Module = "[Module]",
+          Constructor = "[Constr]",
+        },
       },
 
       -- Default list of enabled providers defined so that you can extend it
@@ -443,7 +422,7 @@ require("lazy").setup({
       fuzzy = { implementation = "lua" },
     },
     opts_extend = { "sources.default" },
-    signature = { enabled = true },
+    signature = { enabled = false },
   },
 
   { -- Autoformat
@@ -491,15 +470,49 @@ require("lazy").setup({
 
   {
     "rebelot/kanagawa.nvim",
+    opts = {
+      -- Remove backgrounds
+      transparent = true,
+      overrides = function(colors)
+        return {
+          Normal              = { bg = "none" },
+          NormalNC            = { bg = "none" },
+          NormalFloat         = { bg = "none" },
+          FloatBorder         = { bg = "none" },
+          FloatTitle          = { bg = "none" },
+
+          -- Transparent sign column and signs
+          SignColumn          = { bg = "none" },
+
+          -- Git signs (from gitsigns.nvim)
+          GitSignsAdd         = { bg = "none" },
+          GitSignsChange      = { bg = "none" },
+          GitSignsDelete      = { bg = "none" },
+
+          -- Diagnostics signs (from LSP)
+          DiagnosticSignError = { bg = "none" },
+          DiagnosticSignWarn  = { bg = "none" },
+          DiagnosticSignInfo  = { bg = "none" },
+          DiagnosticSignHint  = { bg = "none" },
+
+          -- Line Number
+          LineNr              = { bg = "none" },
+          CursorLineNr        = { bg = "none" },
+
+          -- Telescope
+          TelescopeBorder     = { bg = "none" },
+          StatusLine          = { fg = "#586e75", bg = "#073642" },
+          StatusLineNC        = { fg = "#445055", bg = "#002b36" },
+
+        }
+      end,
+    },
     priority = 1000,                 -- Make sure to load this before all the other start plugins.
     cond = function()
       return not is_apple_terminal() -- Load Kanagawa only if not on an Apple Terminal
     end,
     init = function()
       vim.cmd.colorscheme("kanagawa")
-
-      -- You can configure highlights by doing something like:
-      vim.cmd.hi("Comment gui=none")
     end,
   },
 
@@ -543,9 +556,9 @@ require("lazy").setup({
         additional_vim_regex_highlighting = { "ruby" },
       },
       indent = { enable = true, disable = { "ruby" } },
+
     },
-    -- There are additional nvim-treesitter modules that you can use to interact
-    -- with nvim-treesitter. You should go explore a few and see what interests you:
+    -- There are additional nvim-treesitter modules to interact with Treesitter
     --
     --    - Incremental selection: Included, see `:help nvim-treesitter-incremental-selection-mod`
     --    - Show your current context: https://github.com/nvim-treesitter/nvim-treesitter-context
@@ -555,6 +568,11 @@ require("lazy").setup({
   require("kickstart.plugins.indent_line"),
   require("kickstart.plugins.neo-tree"),
   require("kickstart.plugins.gitsigns"),
+}, {
+  -- Remove this after winborder is fixed
+  ui = {
+    border = "rounded",
+  },
 })
 
 -- The line beneath this is called `modeline`. See `:help modeline`
