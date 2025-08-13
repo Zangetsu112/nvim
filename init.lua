@@ -97,7 +97,7 @@ vim.api.nvim_create_autocmd("TextYankPost", {
   desc = "Highlight when yanking (copying) text",
   group = vim.api.nvim_create_augroup("kickstart-highlight-yank", { clear = true }),
   callback = function()
-    vim.highlight.on_yank()
+    vim.hl.on_yank()
   end,
 })
 
@@ -114,9 +114,7 @@ vim.opt.rtp:prepend(lazypath)
 
 -- [[ Configure and install plugins ]]
 require("lazy").setup({
-  { "tpope/vim-sleuth" }, -- Detect tabstop and shiftwidth automatically
-
-  {                       -- Fuzzy Finder (files, lsp, etc)
+  { -- Fuzzy Finder (files, lsp, etc)
     "nvim-telescope/telescope.nvim",
     event = "VimEnter",
     branch = "0.1.x",
@@ -305,7 +303,7 @@ require("lazy").setup({
           local client = vim.lsp.get_client_by_id(event.data.client_id)
           if
               client
-              and client.supports_method(vim.lsp.protocol.Methods.textDocument_documentHighlight, event.buf)
+              and client:supports_method(vim.lsp.protocol.Methods.textDocument_documentHighlight, event.buf)
           then
             local highlight_augroup =
                 vim.api.nvim_create_augroup("kickstart-lsp-highlight", { clear = false })
@@ -334,7 +332,7 @@ require("lazy").setup({
           -- code, if the language server you are using supports them
 
           if
-              client and client.supports_method(vim.lsp.protocol.Methods.textDocument_inlayHint, event.buf)
+              client and client:supports_method(vim.lsp.protocol.Methods.textDocument_inlayHint, event.buf)
           then
             map("<leader>th", function()
               vim.lsp.inlay_hint.enable(not vim.lsp.inlay_hint.is_enabled({ bufnr = event.buf }))
@@ -556,7 +554,6 @@ require("lazy").setup({
         additional_vim_regex_highlighting = { "ruby" },
       },
       indent = { enable = true, disable = { "ruby" } },
-
     },
     -- There are additional nvim-treesitter modules to interact with Treesitter
     --
