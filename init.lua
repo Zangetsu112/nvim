@@ -60,8 +60,9 @@ local is_apple_terminal = function()
 end
 
 -- [[ Basic Keymaps ]]
--- Clear highlights on search when pressing <Esc> in normal mode
+-- Clear highlights on search: <Esc> or '//' in normal mode
 vim.keymap.set("n", "<Esc>", "<cmd>nohlsearch<CR>")
+vim.keymap.set("n", "//", "<cmd>nohlsearch<CR>")
 
 -- Diagnostics settings
 -- Print style needs to be defined (Neovim v11.0+)
@@ -82,12 +83,6 @@ vim.keymap.set("n", "<left>", '<cmd>echo "Use h to move!!"<CR>')
 vim.keymap.set("n", "<right>", '<cmd>echo "Use l to move!!"<CR>')
 vim.keymap.set("n", "<up>", '<cmd>echo "Use k to move!!"<CR>')
 vim.keymap.set("n", "<down>", '<cmd>echo "Use j to move!!"<CR>')
-
--- Keybinds to make split navigation easier.
-vim.keymap.set("n", "<C-h>", "<C-w><C-h>", { desc = "Move focus to the left window" })
-vim.keymap.set("n", "<C-l>", "<C-w><C-l>", { desc = "Move focus to the right window" })
-vim.keymap.set("n", "<C-j>", "<C-w><C-j>", { desc = "Move focus to the lower window" })
-vim.keymap.set("n", "<C-k>", "<C-w><C-k>", { desc = "Move focus to the upper window" })
 
 -- [[ Basic Autocommands ]]
 --  See `:help lua-guide-autocommands`
@@ -135,6 +130,7 @@ require("lazy").setup({
       },
 
       { "nvim-telescope/telescope-ui-select.nvim" },
+      { "debugloop/telescope-undo.nvim" },
     },
 
     config = function()
@@ -149,7 +145,14 @@ require("lazy").setup({
         },
         extensions = {
           ["ui-select"] = {
-            require("telescope.themes").get_dropdown(),
+            require("telescope.themes").get_cursor(),
+          },
+          undo = {
+            side_by_side = true,
+            layout_strategy = "vertical",
+            layout_config = {
+              preview_height = 0.8,
+            },
           },
         },
       })
@@ -157,9 +160,11 @@ require("lazy").setup({
       -- Enable Telescope extensions if they are installed
       pcall(require("telescope").load_extension, "fzf")
       pcall(require("telescope").load_extension, "ui-select")
+      pcall(require("telescope").load_extension, "undo")
 
       -- See `:help telescope.builtin`
       local builtin = require("telescope.builtin")
+      vim.keymap.set("n", "<leader>u", "<cmd>Telescope undo<cr>", { desc = "[U]ndo Tree " })
       vim.keymap.set("n", "<leader>sh", builtin.help_tags, { desc = "[S]earch [H]elp" })
       vim.keymap.set("n", "<leader>sk", builtin.keymaps, { desc = "[S]earch [K]eymaps" })
       vim.keymap.set("n", "<leader>sf", builtin.find_files, { desc = "[S]earch [F]iles" })
@@ -177,7 +182,7 @@ require("lazy").setup({
       -- Slightly advanced example of overriding default behavior and theme
       vim.keymap.set("n", "<leader>/", function()
         -- You can pass additional configuration to Telescope to change the theme, layout, etc.
-        builtin.current_buffer_fuzzy_find(require("telescope.themes").get_dropdown({
+        builtin.current_buffer_fuzzy_find(require("telescope.themes").get_cursor({
           winblend = 20,
           previewer = false,
         }))
@@ -224,7 +229,15 @@ require("lazy").setup({
       -- Useful LSP status messages (bottom right corner)
       {
         "j-hui/fidget.nvim",
-        opts = {}
+        opts = {
+          notification = {
+            override_vim_notify = true,
+            window = {
+              -- Remove when winblend if fixed ?
+              winblend = 0, -- Background color opacity in the notification window
+            },
+          },
+        }
       },
 
       -- Adds completion capabilities to neovim-lsp
@@ -255,20 +268,9 @@ require("lazy").setup({
             vim.keymap.set(mode, keys, func, { buffer = event.buf, desc = "LSP: " .. desc })
           end
 
-          -- Jump to the definition of the word under your cursor.
-          --  This is where a variable was first declared, or where a function is defined, etc.
-          --  To jump back, press <C-t>.
           map("gd", require("telescope.builtin").lsp_definitions, "[G]oto [D]efinition")
-
-          -- Find references for the word under your cursor.
           map("gr", require("telescope.builtin").lsp_references, "[G]oto [R]eferences")
-
-          -- Jump to the implementation of the word under your cursor.
           map("gI", require("telescope.builtin").lsp_implementations, "[G]oto [I]mplementation")
-
-          -- Jump to the type of the word under your cursor.
-          --  Useful when you're not sure what type a variable is and you want to see
-          --  the definition of its *type*, not where it was *defined*.
           map("<leader>D", require("telescope.builtin").lsp_type_definitions, "Type [D]efinition")
 
           -- Fuzzy find all the symbols in your current document.
@@ -330,7 +332,6 @@ require("lazy").setup({
 
           -- The following code creates a keymap to toggle inlay hints in your
           -- code, if the language server you are using supports them
-
           if
               client and client:supports_method(vim.lsp.protocol.Methods.textDocument_inlayHint, event.buf)
           then
@@ -471,7 +472,7 @@ require("lazy").setup({
     opts = {
       -- Remove backgrounds
       transparent = true,
-      overrides = function(colors)
+      overrides = function()
         return {
           Normal              = { bg = "none" },
           NormalNC            = { bg = "none" },
@@ -523,6 +524,11 @@ require("lazy").setup({
     -- that plenary isn't loaded twice, not affecting the load time
     dependencies = { "nvim-lua/plenary.nvim" },
     opts = { signs = false },
+  },
+
+  {
+    "folke/zen-mode.nvim",
+    opts = {}
   },
 
   { -- Highlight, edit, and navigate code
