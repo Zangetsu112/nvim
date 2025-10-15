@@ -204,20 +204,6 @@ require("lazy").setup({
   },
 
   {
-    -- `lazydev` configures Lua LSP for Neovim config, runtime and plugins
-    -- used for completion, annotations and signatures of Neovim apis
-    "folke/lazydev.nvim",
-    ft = "lua",
-    opts = {
-      library = {
-        -- See the configuration section for more details
-        -- Load luvit types when the `vim.uv` word is found
-        { path = "${3rd}/luv/library", words = { "vim%.uv" } },
-      },
-    },
-  },
-
-  {
     -- Main LSP Configuration
     "neovim/nvim-lspconfig",
     dependencies = {
@@ -247,7 +233,7 @@ require("lazy").setup({
       -- LSP stands for Language Server Protocol. It's a protocol that helps editors
       -- and language tooling communicate in a standardized fashion.
       --
-      -- Thus, Language Servers are external tools that must be installed separately fromj
+      -- Thus, Language Servers are external tools that must be installed separately from
       -- Neovim. The `Mason` plugin serves as a installation manager to download and manage
       -- these langugae servers
       -- Caveat: Mason does not build globally, other text editors will likely download
@@ -356,16 +342,17 @@ require("lazy").setup({
       -- This is like a LSP profile page
       local servers = {
         clangd = {},
-        lua_ls = {
-          settings = {
-            Lua = {
-              completion = {
-                callSnippet = "Replace",
-              },
-              diagnostics = { disable = { "missing-fields" } },
-            },
-          },
-        },
+        -- Uncomment to enable Lua LSP
+        -- lua_ls = {
+        --   settings = {
+        --     Lua = {
+        --       completion = {
+        --         callSnippet = "Replace",
+        --       },
+        --       diagnostics = { disable = { "missing-fields" } },
+        --     },
+        --   },
+        -- },
       }
 
       require("mason").setup({
@@ -382,6 +369,21 @@ require("lazy").setup({
       require("mason-lspconfig").setup()
     end,
   },
+
+  -- Uncomment to enable Lua LSP extentions
+  -- {
+  --   -- `lazydev` configures Lua LSP for Neovim config, runtime and plugins
+  --   -- used for completion, annotations and signatures of Neovim apis
+  --   "folke/lazydev.nvim",
+  --   ft = "lua",
+  --   opts = {
+  --     library = {
+  --       -- See the configuration section for more details
+  --       -- Load luvit types when the `vim.uv` word is found
+  --       { path = "${3rd}/luv/library", words = { "vim%.uv" } },
+  --     },
+  --   },
+  -- },
 
   { -- Auto completion
     "saghen/blink.cmp",
@@ -500,16 +502,13 @@ require("lazy").setup({
 
           -- Telescope
           TelescopeBorder     = { bg = "none" },
-          StatusLine          = { fg = "#586e75", bg = "#073642" },
-          StatusLineNC        = { fg = "#445055", bg = "#002b36" },
+          StatusLine          = { fg = "none", bg = "none" },
+          StatusLineNC        = { fg = "none", bg = "none" },
 
         }
       end,
     },
-    priority = 1000,                 -- Make sure to load this before all the other start plugins.
-    cond = function()
-      return not is_apple_terminal() -- Load Kanagawa only if not on an Apple Terminal
-    end,
+    priority = 1000, -- Make sure to load this before all the other start plugins.
     init = function()
       vim.cmd.colorscheme("kanagawa")
     end,
@@ -541,14 +540,6 @@ require("lazy").setup({
         "bash",
         "c",
         "diff",
-        "html",
-        "lua",
-        "luadoc",
-        "markdown",
-        "markdown_inline",
-        "query",
-        "vim",
-        "vimdoc",
       },
       -- Autoinstall languages that are not installed
       auto_install = true,
