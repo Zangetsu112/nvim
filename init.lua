@@ -50,6 +50,12 @@ vim.opt.cursorline = true
 -- Minimal number of screen lines to keep above and below the cursor.
 vim.opt.scrolloff = 10
 
+-- Accept W and Q
+vim.cmd('cabbrev W w')
+vim.cmd('cabbrev Q q')
+vim.cmd('cabbrev WQ wq')
+vim.cmd('cabbrev Wq wq')
+
 -- Set the default border style for all floating windows to "rounded"
 -- Commenting for now, bug fixes have not been ratifies into v11 yet
 -- vim.opt.winborder = "rounded"
@@ -170,10 +176,11 @@ require("lazy").setup({
       vim.keymap.set("n", "<leader>sf", builtin.find_files, { desc = "[S]earch [F]iles" })
       vim.keymap.set("n", "<leader>ss", builtin.builtin, { desc = "[S]earch [S]elect Telescope" })
       vim.keymap.set("n", "<leader>sw", builtin.grep_string, { desc = "[S]earch current [W]ord" })
-      vim.keymap.set("n", "<leader>sg", function()
+      vim.keymap.set("n", "<leader>sg", builtin.live_grep, { desc = "[Search] by [G]rep" })
+      vim.keymap.set("n", "<leader>sG", function()
         local git_root = vim.fn.systemlist("git rev-parse --show-toplevel")[1]
         builtin.live_grep({ cwd = git_root })
-      end, { desc = "[S]earch by [G]rep" })
+      end, { desc = "[S]earch top level [G]it Repository" })
       vim.keymap.set("n", "<leader>sd", builtin.diagnostics, { desc = "[S]earch [D]iagnostics" })
       vim.keymap.set("n", "<leader>sr", builtin.resume, { desc = "[S]earch [R]esume" })
       vim.keymap.set("n", "<leader>s.", builtin.oldfiles, { desc = '[S]earch Recent Files ("." for repeat)' })
@@ -267,7 +274,7 @@ require("lazy").setup({
           -- Fuzzy find all the symbols in your current workspace.
           --  Similar to document symbols, except searches over your entire project.
           map(
-            "<leader>p",
+            "<leader>ps",
             require("telescope.builtin").lsp_dynamic_workspace_symbols,
             "[P]roject Dynamic Symbols"
           )
@@ -277,7 +284,7 @@ require("lazy").setup({
           map("<leader>rn", vim.lsp.buf.rename, "[R]e[n]ame")
 
           -- Execute a code action, usually your cursor needs to be on top of an error
-          -- or a suggestion from your LSP for this to activate.
+          -- or a suggestion from yonr LSP for this to activate.
           map("<leader>ca", vim.lsp.buf.code_action, "[C]ode [A]ction", { "n", "x" })
 
           --  For example, in C this would take you to the header.
@@ -571,3 +578,6 @@ require("lazy").setup({
 
 -- The line beneath this is called `modeline`. See `:help modeline`
 -- vim: ts=2 sts=2 sw=2 et
+
+-- Custom plugins:
+require("kickstart.custom.highlights")
