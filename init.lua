@@ -57,8 +57,7 @@ vim.cmd('cabbrev WQ wq')
 vim.cmd('cabbrev Wq wq')
 
 -- Set the default border style for all floating windows to "rounded"
--- Commenting for now, bug fixes have not been ratifies into v11 yet
--- vim.opt.winborder = "rounded"
+vim.opt.winborder = "rounded"
 
 -- Conditional for Mac terminal specific settings
 local is_apple_terminal = function()
@@ -76,7 +75,7 @@ vim.diagnostic.config({
   virtual_lines = false, -- Keep diagnostics virtual line off by default
 })
 -- List diagnostic messages in a quickfix
-vim.keymap.set("n", "<leader>q", vim.diagnostic.setloclist, { desc = "Open diagnostic [Q]uickfix list" })
+vim.keymap.set("n", "<leader>qd", vim.diagnostic.setloclist, { desc = "Open diagnostic [Q]uickfix list" })
 -- Toggle Diagnostics
 vim.keymap.set('n', '<leader>td', function()
   local new_config = not vim.diagnostic.config().virtual_lines
@@ -116,9 +115,7 @@ vim.opt.rtp:prepend(lazypath)
 -- [[ Configure and install plugins ]]
 require("lazy").setup({
   { -- Fuzzy Finder (files, lsp, etc)
-    "nvim-telescope/telescope.nvim",
-    event = "VimEnter",
-    branch = "0.1.x",
+    "nvim-telescope/telescope.nvim", version = "*",
     dependencies = {
       { "nvim-lua/plenary.nvim" },
 
@@ -210,6 +207,35 @@ require("lazy").setup({
     end,
   },
 
+  { -- Highlight, edit, and navigate code
+    "nvim-treesitter/nvim-treesitter",
+    build = ":TSUpdate",
+    main = "nvim-treesitter.config",
+    -- [[ Configure Treesitter ]] See `:help nvim-treesitter`
+    opts = {
+      ensure_installed = {
+        "bash",
+        "c",
+        "diff",
+      },
+      -- Autoinstall languages that are not installed
+      auto_install = true,
+      highlight = {
+        enable = true,
+        -- Some languages depend on vim's regex highlighting system (such as Ruby) for indent rules.
+        --  If you are experiencing weird indenting issues, add the language to
+        --  the list of additional_vim_regex_highlighting and disabled languages for indent.
+        additional_vim_regex_highlighting = { "ruby" },
+      },
+      indent = { enable = true, disable = { "ruby" } },
+    },
+    -- There are additional nvim-treesitter modules to interact with Treesitter
+    --
+    --    - Incremental selection: Included, see `:help nvim-treesitter-incremental-selection-mod`
+    --    - Show your current context: https://github.com/nvim-treesitter/nvim-treesitter-context
+    --    - Treesitter + textobjects: https://github.com/nvim-treesitter/nvim-treesitter-textobjects
+  },
+
   {
     -- Main LSP Configuration
     "neovim/nvim-lspconfig",
@@ -226,8 +252,8 @@ require("lazy").setup({
           notification = {
             override_vim_notify = true,
             window = {
-              -- Remove when winblend if fixed ?
-              winblend = 0, -- Background color opacity in the notification window
+              -- Background color opacity in the notification window
+              winblend = 0,
             },
           },
         }
@@ -261,10 +287,11 @@ require("lazy").setup({
             vim.keymap.set(mode, keys, func, { buffer = event.buf, desc = "LSP: " .. desc })
           end
 
+          map("gD", vim.lsp.buf.declaration, "[G]oto [D]eclaration")
           map("gd", require("telescope.builtin").lsp_definitions, "[G]oto [D]efinition")
           map("gr", require("telescope.builtin").lsp_references, "[G]oto [R]eferences")
           map("gI", require("telescope.builtin").lsp_implementations, "[G]oto [I]mplementation")
-          map("<leader>D", require("telescope.builtin").lsp_type_definitions, "Type [D]efinition")
+          map("<leader>gd", require("telescope.builtin").lsp_type_definitions, "Type [D]efinition")
 
           -- Fuzzy find all the symbols in your current document.
           --  Symbols are things like variables, functions, types, etc.
@@ -273,11 +300,7 @@ require("lazy").setup({
 
           -- Fuzzy find all the symbols in your current workspace.
           --  Similar to document symbols, except searches over your entire project.
-          map(
-            "<leader>ps",
-            require("telescope.builtin").lsp_dynamic_workspace_symbols,
-            "[P]roject Dynamic Symbols"
-          )
+          map("<leader>ps", require("telescope.builtin").lsp_dynamic_workspace_symbols, "[P]roject Dynamic Symbols")
 
           -- Rename the variable under your cursor.
           --  Most Language Servers support renaming across files, etc.
@@ -286,9 +309,6 @@ require("lazy").setup({
           -- Execute a code action, usually your cursor needs to be on top of an error
           -- or a suggestion from yonr LSP for this to activate.
           map("<leader>ca", vim.lsp.buf.code_action, "[C]ode [A]ction", { "n", "x" })
-
-          --  For example, in C this would take you to the header.
-          map("gD", vim.lsp.buf.declaration, "[G]oto [D]eclaration")
 
           -- The following two autocommands are used to highlight references of the
           -- word under your cursor when your cursor rests there for a little while.
@@ -335,44 +355,14 @@ require("lazy").setup({
         end,
       })
 
-      --  By adding new plugins like blink, nvim-cmp and nvim-dap
-      --  We create new capabilities, these capabilities need to be broadcasted to the LSP server.
-      --  Blink provides methods to override the vim.lsp.protocol.make_client_capabilities()
-      -- local capabilities = require("blink.cmp").get_lsp_capabilities()
-      -- Starting neovim v11, there is no need to share capabilities explicitly
-
-      --  Additional override configurations for LSP. Available keys are:
-      --  - cmd (table): Override the default command used to start the server
-      --  - filetypes (table): Override the default list of associated filetypes for the server
-      --  - capabilities (table): Override fields in capabilities. Can be used to disable certain LSP features.
-      --  - settings (table): Override the default settings passed when initializing the server.
-      -- This is like a LSP profile page
-      local servers = {
-        clangd = {},
-        -- Uncomment to enable Lua LSP
-        -- lua_ls = {
-        --   settings = {
-        --     Lua = {
-        --       completion = {
-        --         callSnippet = "Replace",
-        --       },
-        --       diagnostics = { disable = { "missing-fields" } },
-        --     },
-        --   },
-        -- },
-      }
-
-      require("mason").setup({
-        -- Remove this after winborder is fixed
-        ui = {
-          border = "rounded",
-        },
-      })
-
+      -- Load server configuration from custom/lsp.lua
+      local servers = require("kickstart.custom.lsp_servers")
+      require("mason").setup()
       -- Ensure the servers and tools above are installed
       local ensure_installed = vim.tbl_keys(servers or {})
-      require("mason-tool-installer").setup({ ensure_installed = ensure_installed })
 
+      -- Mason tool installer avoids naming conflicts between lspconfig and Mason
+      require("mason-tool-installer").setup({ ensure_installed = ensure_installed })
       require("mason-lspconfig").setup()
     end,
   },
@@ -392,134 +382,16 @@ require("lazy").setup({
   --   },
   -- },
 
-  { -- Auto completion
-    "saghen/blink.cmp",
-    dependencies = { "rafamadriz/friendly-snippets" },
-    -- use a release tag to download pre-built binaries
-    version = "1.*",
-    opts = {
-      -- 'enter' for enter to accept
-      keymap = { preset = "enter" },
-      -- (Default) Only show the documentation popup when manually triggered
-      completion = { documentation = { auto_show = false } },
-      appearance = {
-        kind_icons = {
-          Function = "[Function]",
-          Method = "[Method]",
-          Field = "[Field]",
-          Variable = "[Var]",
-          Property = "[Property]",
-          Keyword = "[Keyword]",
-          Struct = "[Struct]",
-          Enum = "[Enum]",
-          EnumMember = "[Enum]",
-          Snippet = "[Snippet]",
-          Text = "[Text]",
-          Module = "[Module]",
-          Constructor = "[Constr]",
-        },
-      },
+  -- Custom Configurations
+  require("kickstart.custom.formatters"),
+  require("kickstart.custom.autocompletion"),
+  require("kickstart.custom.colorscheme"),
 
-      -- Default list of enabled providers defined so that you can extend it
-      -- elsewhere in your config, without redefining it, due to `opts_extend`
-      sources = {
-        default = { "lsp", "path", "snippets", "buffer" },
-      },
-
-      -- (Default) Rust fuzzy matcher for typo resistance and significantly better performance
-      fuzzy = { implementation = "lua" },
-    },
-    opts_extend = { "sources.default" },
-    signature = { enabled = false },
-  },
-
-  { -- Autoformat
-    "stevearc/conform.nvim",
-    event = { "BufWritePre" },
-    cmd = { "ConformInfo" },
-    keys = {
-      {
-        "<leader>f",
-        function()
-          require("conform").format({ async = true, lsp_format = "fallback" })
-        end,
-        mode = "",
-        desc = "[F]ormat buffer",
-      },
-    },
-    opts = {
-      notify_on_error = false,
-      format_on_save = function(bufnr)
-        -- Disable "format_on_save lsp_fallback" for languages that don't
-        -- have a well standardized coding style. You can add additional
-        -- languages here or re-enable it for the disabled ones.
-        local disable_filetypes = { c = true, cpp = true }
-        local lsp_format_opt
-        if disable_filetypes[vim.bo[bufnr].filetype] then
-          lsp_format_opt = "never"
-        else
-          lsp_format_opt = "fallback"
-        end
-        return {
-          timeout_ms = 500,
-          lsp_format = lsp_format_opt,
-        }
-      end,
-      -- If not formatters are mentioned it falls back to lsp
-      formatters_by_ft = {
-        -- Conform can also run multiple formatters sequentially
-        -- python = { "isort", "black" },
-        --
-        -- You can use 'stop_after_first' to run the first available formatter from the list
-        -- javascript = { "prettierd", "prettier", stop_after_first = true },
-      },
-    },
-  },
-
-  {
-    "rebelot/kanagawa.nvim",
-    opts = {
-      -- Remove backgrounds
-      transparent = true,
-      overrides = function()
-        return {
-          Normal              = { bg = "none" },
-          NormalNC            = { bg = "none" },
-          NormalFloat         = { bg = "none" },
-          FloatBorder         = { bg = "none" },
-          FloatTitle          = { bg = "none" },
-
-          -- Transparent sign column and signs
-          SignColumn          = { bg = "none" },
-
-          -- Git signs (from gitsigns.nvim)
-          GitSignsAdd         = { bg = "none" },
-          GitSignsChange      = { bg = "none" },
-          GitSignsDelete      = { bg = "none" },
-
-          -- Diagnostics signs (from LSP)
-          DiagnosticSignError = { bg = "none" },
-          DiagnosticSignWarn  = { bg = "none" },
-          DiagnosticSignInfo  = { bg = "none" },
-          DiagnosticSignHint  = { bg = "none" },
-
-          -- Line Number
-          LineNr              = { bg = "none" },
-          CursorLineNr        = { bg = "none" },
-
-          -- Telescope
-          TelescopeBorder     = { bg = "none" },
-          StatusLine          = { fg = "none", bg = "none" },
-          StatusLineNC        = { fg = "none", bg = "none" },
-
-        }
-      end,
-    },
-    priority = 1000, -- Make sure to load this before all the other start plugins.
-    init = function()
-      vim.cmd.colorscheme("kanagawa")
-    end,
-  },
+  -- Plugins
+  require("kickstart.plugins.indent_line"),
+  require("kickstart.plugins.neo-tree"),
+  require("kickstart.plugins.gitsigns"),
+  -- require("kickstart.plugins.debug"),
 
   -- Highlight todo, notes, etc in comments
   {
@@ -537,40 +409,8 @@ require("lazy").setup({
     opts = {}
   },
 
-  { -- Highlight, edit, and navigate code
-    "nvim-treesitter/nvim-treesitter",
-    build = ":TSUpdate",
-    main = "nvim-treesitter.configs",
-    -- [[ Configure Treesitter ]] See `:help nvim-treesitter`
-    opts = {
-      ensure_installed = {
-        "bash",
-        "c",
-        "diff",
-      },
-      -- Autoinstall languages that are not installed
-      auto_install = true,
-      highlight = {
-        enable = true,
-        -- Some languages depend on vim's regex highlighting system (such as Ruby) for indent rules.
-        --  If you are experiencing weird indenting issues, add the language to
-        --  the list of additional_vim_regex_highlighting and disabled languages for indent.
-        additional_vim_regex_highlighting = { "ruby" },
-      },
-      indent = { enable = true, disable = { "ruby" } },
-    },
-    -- There are additional nvim-treesitter modules to interact with Treesitter
-    --
-    --    - Incremental selection: Included, see `:help nvim-treesitter-incremental-selection-mod`
-    --    - Show your current context: https://github.com/nvim-treesitter/nvim-treesitter-context
-    --    - Treesitter + textobjects: https://github.com/nvim-treesitter/nvim-treesitter-textobjects
-  },
-
-  require("kickstart.plugins.indent_line"),
-  require("kickstart.plugins.neo-tree"),
-  require("kickstart.plugins.gitsigns"),
 }, {
-  -- Remove this after winborder is fixed
+  -- Remove this after winborder is fixed for Lazy
   ui = {
     border = "rounded",
   },
@@ -579,5 +419,5 @@ require("lazy").setup({
 -- The line beneath this is called `modeline`. See `:help modeline`
 -- vim: ts=2 sts=2 sw=2 et
 
--- Custom plugins:
+-- Custom plugins
 require("kickstart.custom.highlights")
